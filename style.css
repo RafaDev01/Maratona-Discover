@@ -102,8 +102,6 @@ button:hover {
   opacity: 1;
 }
 
-
-
 /* Header ============================================== */
 
 header {
@@ -170,12 +168,10 @@ header {
   color: #969cb3;
 }
 
-
 table thead tr th:first-child ,
 table tbody tr td:first-child {
   border-radius: 0.25rem 0 0 0.25rem;
 }
-
 
 table thead tr th:last-child ,
 table tbody tr td:last-child{
@@ -283,8 +279,6 @@ input {
   width: 48%;
 }
 
-
-
 /* Footer ============================================== */
 footer {
   text-align: center;
@@ -305,7 +299,6 @@ footer {
     grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
   }
-
 }
 
 
