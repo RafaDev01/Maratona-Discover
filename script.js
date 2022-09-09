@@ -12,35 +12,31 @@ const Modal = {
   }
 }
 
-const transactions = [
-  {
-    id: 1,
-    description: 'Luz',
-    amount: -50000,
-    date: '23/01/2022'
+const Storage = {
+  get() {
+    return JSON.parse(localStorage.getItem("dev.finances:transactions")) || []
   },
-  {
-    id: 2,
-    description: 'Website',
-    amount: 500000,
-    date: '23/01/2022'
-  },
-  {
-    id: 3,
-    description: 'Internet',
-    amount: -20000,
-    date: '23/01/2022'
-  },
-  {
-    id: 4,
-    description: 'App',
-    amount: 400000,
-    date: '23/01/2022'
+
+  set(transactions){
+    localStorage.setItem("dev.finances:transactions",
+    JSON.stringify(transactions))
   }
-]
+}
 
 const Transaction = {
-  all: transactions,
+  all: Storage.get(),
+  
+  add(transaction){
+    Transaction.all.push(transaction)
+
+    App.reload();
+  },
+
+  remove(index){
+    Transaction.all.splice(index, 1)
+
+    App.reload()
+  },
 
   incomes() {
     let income = 0;
@@ -74,13 +70,14 @@ const DOM = {
 
   addTransaction(transaction, index) {
     const tr = document.createElement('tr')
-    tr.innerHTML = DOM.innerHTMLTransection(transaction)
+    tr.innerHTML = DOM.innerHTMLTransection(transaction, index)
+    tr.dataset.index = index
 
     DOM.transactionsContainer.appendChild(tr)
 
   },
 
-  innerHTMLTransection(transaction) {
+  innerHTMLTransection(transaction, index) {
     const CSSclass = transaction.amount > 0 ? "income" : "expense"
 
     const amount = Utils.formatCurrency(transaction.amount)
@@ -91,7 +88,7 @@ const DOM = {
       <td class="${CSSclass}">${amount}</td>
       <td class="date">${transaction.date}</td>
       <td>
-        <img src="./assets/minus.svg" alt="Remove transaction">
+        <img onclick="Transaction.remove(${index})" src="./assets/minus.svg" alt="Remove transaction">
       </td>
     `
     return html
@@ -107,10 +104,26 @@ const DOM = {
     document
         .getElementById('total-display')
         .innerHTML = Utils.formatCurrency(Transaction.total())
+  },
+  
+  clearTransactions() {
+    DOM.transactionsContainer.innerHTML = "";
   }
 }
 
 const Utils = {
+  formatAmount(value){
+    //expressão regular 
+    value = Number(value.replace(/\,\./g, "")) * 100
+    
+    return value
+  },
+
+  formatDate(date){
+    const splittedDate = date.split("-")
+    return `${splittedDate[2]}/${splittedDate[1]}/${splittedDate[0]}`
+  },
+
   formatCurrency(value){
     const signal = Number(value) < 0 ? "-" : "";
 
@@ -127,9 +140,83 @@ const Utils = {
   }
 }
 
-transactions.forEach(function(transaction){
-  DOM.addTransaction(transaction)
-})
+const Form = {
+  description: document.querySelector('input#description'),
+  amount: document.querySelector('input#amount'),
+  date: document.querySelector('input#date'),
 
-DOM.updateBalance();
+  getValues(){
+    return{
+      description: Form.description.value,
+      amount: Form.amount.value,
+      date: Form.date.value
+    }
+  },
+
+  validadeFields(){
+    const {description, amount, date} = Form.getValues();
+  if( description.trim() === "" || 
+      amount.trim() === "" ||
+      date.trim() === ""){
+        throw new Error("Por favor preencha todos os campos")
+    }
+
+  },
+
+  formatValues(){
+    let {description, amount, date} = Form.getValues()
+
+    amount = Utils.formatAmount(amount);
+
+    date = Utils.formatDate(date);
+
+    return {
+      description,
+      amount,
+      date
+    }
+  },
+
+  clearFields(){
+    Form.description.value = ""
+    Form.amount.value = ""
+    Form.date.value = ""
+  },
+
+  submit(event) {
+    
+    event.preventDefault()
+          
+    try {
+      //verificar se todas as informações foram preenchidas
+      Form.validadeFields()
+      const transaction = Form.formatValues()
+      //salvar
+      Transaction.add(transaction);
+      //Apagar os dados do form
+      Form.clearFields()
+      //Fechar modal
+      Modal.close()
+    } catch(error) {
+      alert(error.message)
+    }
+  }
+}
+
+const App = {
+  init(){
+  Transaction.all.forEach(DOM.addTransaction)
+
+  DOM.updateBalance();
+
+  Storage.set(Transaction.all)
+
+  },
+  reload(){
+    DOM.clearTransactions()
+    App.init();
+  },
+}
+
+App.init()
 
